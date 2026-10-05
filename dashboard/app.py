@@ -365,5 +365,37 @@ with col_right:
     st.write(f"- **Call Side Bias:** {o_res['call_bias']}")
     st.write(f"- **Put Side Bias:** {o_res['put_bias']}")
 
+st.markdown("---")
+
+# Stock Focus & Timing Radar
+st.subheader("🎯 Stock Radar & Intraday Time Windows")
+stock_radar_data = [
+    {
+        "Sector / Planetary Ruler": "Metals & Defense (Mars)",
+        "Focus Stocks": "Tata Steel, JSW Steel, HAL",
+        "Probable Window": "09:45 - 11:15 IST",
+        "Trigger Condition": "Sustaining above Opening 15-min High & VWAP"
+    },
+    {
+        "Sector / Planetary Ruler": "IT & Software (Mercury / Ashlesha)",
+        "Focus Stocks": "Infosys, TCS, Wipro",
+        "Probable Window": "12:15 - 13:30 IST",
+        "Trigger Condition": "Pullback confirmation near Pivot with rising volume"
+    },
+    {
+        "Sector / Planetary Ruler": "FMCG Defensives (Moon in Cancer)",
+        "Focus Stocks": "ITC, HUL",
+        "Probable Window": "13:30 - 14:30 IST",
+        "Trigger Condition": "Defensive allocation if NIFTY breaks below morning low"
+    },
+    {
+        "Sector / Planetary Ruler": "Index Heavyweights",
+        "Focus Stocks": "Reliance, HDFC Bank",
+        "Probable Window": "14:45 - 15:20 IST",
+        "Trigger Condition": "Closing short-covering above previous day's close"
+    }
+]
+st.table(pd.DataFrame(stock_radar_data))
+
 # Warning Guardrail
-st.warning("⚠️ **Risk Disclosure**: Astrology is not a scientifically proven predictor of financial markets. Always treat these time windows as experimental context and manage risk using stop-losses at the stated technical invalidation levels.")
+st.warning("⚠️️ **Risk Disclosure**: Astrology is not a scientifically proven predictor of financial markets. Always treat these time windows as experimental context and manage risk using stop-losses at the stated technical invalidation levels.")
