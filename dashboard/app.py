@@ -1,9 +1,8 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-import plotly.graph_objects as go
 import yfinance as yf
-from datetime import datetime, timedelta
+from datetime import datetime
 import ephem
 import math
 import pytz
@@ -184,7 +183,8 @@ class OptionChainAnalyzer:
             "pcr": pcr, "max_pain": max_pain, "call_wall": call_wall, "put_wall": put_wall,
             "call_bias": "Heavy Call Resistance" if total_call_oi > total_put_oi else "Moderate Resistance",
             "put_bias": "Strong Put Support" if total_put_oi >= total_call_oi else "Weak Support",
-            "options_score": max(-100, min(100, options_score))
+            "options_score": max(-100, min(100, options_score)),
+            "chain_df": df
         }
 
 
@@ -247,7 +247,7 @@ class VedicAstrologyEngine:
 
 
 # ==========================================
-# 5. COMPOSITE SYNTHESIS & INTRADAY TIMELINE
+# 5. COMPOSITE SYNTHESIS
 # ==========================================
 class CompositeMarketSynthesizer:
     def __init__(self, tech_weight=0.70, astro_weight=0.30):
@@ -258,7 +258,6 @@ class CompositeMarketSynthesizer:
         market_score = (t_res["score"] * 0.65) + (o_res["options_score"] * 0.35)
         blended = (market_score * self.tw) + (a_res["score"] * self.aw)
         
-        # Override safeguard
         if market_score <= -40 and blended > 0: blended = -10
         elif market_score >= 40 and blended < 0: blended = 10
         
@@ -272,33 +271,31 @@ class CompositeMarketSynthesizer:
             "range": f"Consolidation band between S1 ({levels['S1']}) and R1 ({levels['R1']})."
         }
 
-        # Intraday Time-Window Projections
         schedule = [
-            {"Time Window": "09:15 - 09:45 IST", "Session Phase": "Opening Balance", "Bias": "High Volatility", "Playbook Action": "Avoid entering market orders. Mark initial 15-min High & Low."},
-            {"Time Window": "09:45 - 10:45 IST", "Session Phase": "Primary Trend Setup", "Bias": bias, "Playbook Action": f"Trade pullbacks toward Pivot ({levels['Pivot']}). Respect S1/R1 invalidations."},
-            {"Time Window": "10:45 - 12:15 IST", "Session Phase": "Mid-Morning Consolidation", "Bias": "Range-Bound", "Playbook Action": "Option decay phase. Trail stops on runners; avoid fresh breakout buys."},
-            {"Time Window": "12:15 - 13:15 IST", "Session Phase": "European Pre-Open", "Bias": "Directional Expansion", "Playbook Action": "Watch for institutional volume alignment in Reliance & HDFC Bank."},
-            {"Time Window": "13:15 - 15:00 IST", "Session Phase": "Afternoon Shift / Rahu Kaal", "Bias": "Chop & Fakeout Risk", "Playbook Action": "Reduce lot size. Beware of sudden reversal spikes around key strike walls."},
-            {"Time Window": "15:00 - 15:30 IST", "Session Phase": "Market on Close Square-Off", "Bias": "Pull to Max Pain", "Playbook Action": f"Price gravitates toward {o_res['max_pain']}. Close intraday open positions by 15:15."}
+            {"Time Window": "09:15 - 09:45 IST", "Phase": "Opening Balance", "Bias": "High Volatility", "Playbook Action": "Avoid entering market orders. Mark initial 15-min High & Low."},
+            {"Time Window": "09:45 - 10:45 IST", "Phase": "Primary Trend Setup", "Bias": bias, "Playbook Action": f"Trade pullbacks toward Pivot ({levels['Pivot']}). Respect S1/R1 invalidations."},
+            {"Time Window": "10:45 - 12:15 IST", "Phase": "Mid-Morning Consolidation", "Bias": "Range-Bound", "Playbook Action": "Option decay phase. Trail stops on runners; avoid fresh breakout buys."},
+            {"Time Window": "12:15 - 13:15 IST", "Phase": "European Pre-Open", "Bias": "Directional Expansion", "Playbook Action": "Watch for institutional volume expansion or continuation moves."},
+            {"Time Window": "13:15 - 15:00 IST", "Phase": "Afternoon Shift / Rahu Kaal", "Bias": "Chop & Fakeout Risk", "Playbook Action": "Reduce lot size. Beware of sudden reversal spikes around strike walls."},
+            {"Time Window": "15:00 - 15:30 IST", "Phase": "Closing Square-Off", "Bias": "Pull to Max Pain", "Playbook Action": f"Price gravitates toward {o_res['max_pain']}. Close intraday open positions by 15:15."}
         ]
 
         return {"blended_score": round(blended, 1), "bias": bias, "emoji": emoji, "scenarios": scenarios, "schedule": schedule}
 
 
 # ==========================================
-# 6. STREAMLIT APPLICATION DASHBOARD
+# 6. STREAMLIT APPLICATION (TABBED LAYOUT)
 # ==========================================
 st.set_page_config(page_title="NIFTY Astro-Quant Agent", layout="wide", page_icon="📈")
 
-# Sidebar Configuration
 st.sidebar.title("⚙️ Model Controls")
 market = st.sidebar.selectbox("Index Select", ["NIFTY 50 (^NSEI)", "BANK NIFTY (^NSEBANK)"])
 symbol = "^NSEI" if "NIFTY 50" in market else "^NSEBANK"
 tw = st.sidebar.slider("Technical Weight %", 10, 90, 70, 5) / 100.0
 aw = round(1.0 - tw, 2)
-st.sidebar.caption(f"Current Model: {int(tw*100)}% Technical / {int(aw*100)}% Astrological")
+st.sidebar.caption(f"Weights: {int(tw*100)}% Tech / {int(aw*100)}% Astro")
 
-# Data Execution Pipeline
+# Run Pipeline
 data_eng = MarketDataEngine()
 tech_eng = TechnicalAnalysisEngine()
 opt_eng = OptionChainAnalyzer()
@@ -320,9 +317,8 @@ a_res = astro_eng.calculate_astro_score(ephem_data)
 
 synth = combiner.synthesize(t_res, o_res, a_res, levels)
 
-# Main UI Header
-st.title(f"📈 {market} Technical & Astrological Analyzer")
-st.caption(f"Last updated: {quote['timestamp']} | Lahiri Sidereal Ephemeris | Experimental Model")
+st.title(f"📈 {market} Analysis & Trade Hub")
+st.caption(f"Last updated: {quote['timestamp']} | Experimental Model")
 
 # Top KPI Tiles
 c1, c2, c3, c4 = st.columns(4)
@@ -333,69 +329,136 @@ c4.metric("Synthesized Bias", f"{synth['emoji']} {synth['bias']}")
 
 st.markdown("---")
 
-# Intraday Time-Window Schedule
-st.subheader("⏰ Intraday Time-Window Playbook (What to Do at What Time)")
-st.table(pd.DataFrame(synth["schedule"]))
+# Navigation Tabs
+tab_index, tab_options, tab_stocks, tab_astro = st.tabs([
+    "📊 Index Analysis & Timeline",
+    "📈 Options Trading Desk",
+    "💎 Value Equity Stocks (NSE/BSE)",
+    "🪐 Vedic Planetary Transits"
+])
 
-st.markdown("---")
+# ---------------------------------------------
+# TAB 1: INDEX ANALYSIS & TIMELINE
+# ---------------------------------------------
+with tab_index:
+    st.subheader("⏰ Intraday Time-Window Playbook")
+    st.table(pd.DataFrame(synth["schedule"]))
 
-# Strategy Scenarios & Support/Resistance Levels
-col_left, col_right = st.columns(2)
+    col_l, col_r = st.columns(2)
+    with col_l:
+        st.subheader("🎯 Strategy Scenarios")
+        st.success(f"**Bullish Scenario:** {synth['scenarios']['bullish']}")
+        st.error(f"**Bearish Scenario:** {synth['scenarios']['bearish']}")
+        st.info(f"**Range-Bound Scenario:** {synth['scenarios']['range']}")
 
-with col_left:
-    st.subheader("🎯 Trade Scenarios & Triggers")
-    st.success(f"**Bullish Scenario:** {synth['scenarios']['bullish']}")
-    st.error(f"**Bearish Scenario:** {synth['scenarios']['bearish']}")
-    st.info(f"**Range-Bound Scenario:** {synth['scenarios']['range']}")
+    with col_r:
+        st.subheader("📍 Key Structural Levels")
+        st.table(pd.DataFrame([levels]).T.rename(columns={0: "Price Level (INR)"}))
 
-    st.subheader("📍 Key Structural Levels")
-    st.table(pd.DataFrame([levels]).T.rename(columns={0: "Price Level (INR)"}))
+# ---------------------------------------------
+# TAB 2: OPTIONS TRADING DESK
+# ---------------------------------------------
+with tab_options:
+    st.subheader("🎯 Option Buying Timing & Strike Selection")
+    
+    atm_strike = round(quote["current_price"] / 50) * 50
+    call_strike = atm_strike + 50
+    put_strike = atm_strike - 50
 
-with col_right:
-    st.subheader("🪐 Sidereal Vedic Transits (Lahiri)")
-    st.markdown(f"**Moon Sign:** {ephem_data['moon_sign']} | **Moon Nakshatra:** {ephem_data['moon_nakshatra']} | **Tithi:** {ephem_data['tithi']}")
-    st.dataframe(pd.DataFrame(ephem_data["positions"]).T)
+    op_col1, op_col2 = st.columns(2)
+    with op_col1:
+        st.success(f"### 🟢 When Bullish Bias Activates")
+        st.markdown(f"- **Option to Buy:** `{call_strike} CE` (Slight OTM/ATM)")
+        st.markdown(f"- **Best Entry Window:** `09:45 - 10:30 IST` (Momentum breakout)")
+        st.markdown(f"- **Secondary Window:** `12:15 - 13:00 IST` (European open drive)")
+        st.markdown(f"- **Entry Condition:** Spot trades above Pivot `{levels['Pivot']}` & VWAP.")
+        st.markdown(f"- **Hard Stop-Loss:** Exit if spot falls below `{levels['S1']}`.")
 
-    st.subheader("⛓️ Option Chain OI Profile")
+    with op_col2:
+        st.error(f"### 🔴 When Bearish Bias Activates")
+        st.markdown(f"- **Option to Buy:** `{put_strike} PE` (Slight OTM/ATM)")
+        st.markdown(f"- **Best Entry Window:** `09:45 - 10:30 IST` (Breakdown continuation)")
+        st.markdown(f"- **Secondary Window:** `14:00 - 14:45 IST` (Afternoon breakdown)")
+        st.markdown(f"- **Entry Condition:** Spot breaks below Pivot `{levels['Pivot']}` & VWAP.")
+        st.markdown(f"- **Hard Stop-Loss:** Exit if spot recovers above `{levels['R1']}`.")
+
+    st.markdown("---")
+    st.subheader("⛓️ Option Chain Open Interest Snapshot")
     oc1, oc2, oc3, oc4 = st.columns(4)
-    oc1.metric("PCR", o_res["pcr"])
-    oc2.metric("Max Pain", o_res["max_pain"])
-    oc3.metric("Call Wall", o_res["call_wall"])
-    oc4.metric("Put Wall", o_res["put_wall"])
-    st.write(f"- **Call Side Bias:** {o_res['call_bias']}")
-    st.write(f"- **Put Side Bias:** {o_res['put_bias']}")
+    oc1.metric("Put-Call Ratio (PCR)", o_res["pcr"])
+    oc2.metric("Max Pain Strike", o_res["max_pain"])
+    oc3.metric("Call Resistance Wall", o_res["call_wall"])
+    oc4.metric("Put Support Wall", o_res["put_wall"])
 
-st.markdown("---")
+    st.write(f"- **Call Side Positioning:** {o_res['call_bias']}")
+    st.write(f"- **Put Side Positioning:** {o_res['put_bias']}")
+    
+    st.dataframe(o_res["chain_df"][["strikePrice", "call_OI", "call_change_OI", "call_LTP", "put_LTP", "put_change_OI", "put_OI"]], use_container_width=True)
 
-# Stock Focus & Timing Radar
-st.subheader("🎯 Stock Radar & Intraday Time Windows")
-stock_radar_data = [
-    {
-        "Sector / Planetary Ruler": "Metals & Defense (Mars)",
-        "Focus Stocks": "Tata Steel, JSW Steel, HAL",
-        "Probable Window": "09:45 - 11:15 IST",
-        "Trigger Condition": "Sustaining above Opening 15-min High & VWAP"
-    },
-    {
-        "Sector / Planetary Ruler": "IT & Software (Mercury / Ashlesha)",
-        "Focus Stocks": "Infosys, TCS, Wipro",
-        "Probable Window": "12:15 - 13:30 IST",
-        "Trigger Condition": "Pullback confirmation near Pivot with rising volume"
-    },
-    {
-        "Sector / Planetary Ruler": "FMCG Defensives (Moon in Cancer)",
-        "Focus Stocks": "ITC, HUL",
-        "Probable Window": "13:30 - 14:30 IST",
-        "Trigger Condition": "Defensive allocation if NIFTY breaks below morning low"
-    },
-    {
-        "Sector / Planetary Ruler": "Index Heavyweights",
-        "Focus Stocks": "Reliance, HDFC Bank",
-        "Probable Window": "14:45 - 15:20 IST",
-        "Trigger Condition": "Closing short-covering above previous day's close"
-    }
-]
-st.table(pd.DataFrame(stock_radar_data))
+# ---------------------------------------------
+# TAB 3: VALUE EQUITY STOCKS (NSE/BSE)
+# ---------------------------------------------
+with tab_stocks:
+    st.subheader("💎 Value-For-Money Equity Stocks (Non-Mega-Caps)")
+    st.caption("Curated fundamentally strong mid/large-cap stocks listed on NSE & BSE with reasonable valuations.")
+
+    value_stocks = [
+        {
+            "Symbol (NSE)": "FEDERALBNK",
+            "Company": "Federal Bank Ltd",
+            "Sector": "Banking / Financials",
+            "Value Thesis": "Low P/B valuation, high asset quality, consistent loan book expansion.",
+            "Probable Up-Window": "10:00 - 11:30 IST",
+            "Accumulation Trigger": "Above 20 EMA on 15-min chart"
+        },
+        {
+            "Symbol (NSE)": "BEL",
+            "Company": "Bharat Electronics Ltd",
+            "Sector": "Defence / Electronics",
+            "Value Thesis": "Debt-free balance sheet, long-term sovereign order book, strong ROCE.",
+            "Probable Up-Window": "10:15 - 11:45 IST",
+            "Accumulation Trigger": "Holding above previous day close"
+        },
+        {
+            "Symbol (NSE)": "COALINDIA",
+            "Company": "Coal India Ltd",
+            "Sector": "Mining / Energy",
+            "Value Thesis": "High dividend yield (>6%), single-digit P/E, robust free cash flows.",
+            "Probable Up-Window": "12:00 - 13:15 IST",
+            "Accumulation Trigger": "Sustaining above opening VWAP"
+        },
+        {
+            "Symbol (NSE)": "EXIDEIND",
+            "Company": "Exide Industries Ltd",
+            "Sector": "Auto Ancillaries / EV",
+            "Value Thesis": "Reasonable multiples with strong upside from lithium-cell gigafactory investment.",
+            "Probable Up-Window": "12:30 - 13:45 IST",
+            "Accumulation Trigger": "Breakout of initial 30-min range"
+        },
+        {
+            "Symbol (NSE)": "NATIONALUM",
+            "Company": "National Aluminium Co Ltd",
+            "Sector": "Metals / Mining",
+            "Value Thesis": "Low debt, cyclical value rebound, attractive dividend payout.",
+            "Probable Up-Window": "13:45 - 14:45 IST",
+            "Accumulation Trigger": "Support confirmation at Fibonacci S1"
+        }
+    ]
+
+    st.table(pd.DataFrame(value_stocks))
+    st.info("💡 **Execution Rule for Equity**: Accumulate when price is above intraday VWAP during the designated time window. Avoid buying if the overall market is in a sharp downtrend.")
+
+# ---------------------------------------------
+# TAB 4: VEDIC PLANETARY TRANSITS
+# ---------------------------------------------
+with tab_astro:
+    st.subheader("🪐 Sidereal Vedic Transits (Lahiri Ayanamsa)")
+    st.markdown(f"**Moon Sign:** {ephem_data['moon_sign']} | **Moon Nakshatra:** {ephem_data['moon_nakshatra']} | **Tithi:** {ephem_data['tithi']}")
+    st.dataframe(pd.DataFrame(ephem_data["positions"]).T, use_container_width=True)
+
+    st.write("**Astrological Factors Observed:**")
+    for f in a_res["factors"]:
+        st.markdown(f"- {f}")
 
 # Warning Guardrail
-st.warning("⚠️️ **Risk Disclosure**: Astrology is not a scientifically proven predictor of financial markets. Always treat these time windows as experimental context and manage risk using stop-losses at the stated technical invalidation levels.")
+st.warning("⚠️ **Risk Disclosure**: Astrology is not a scientifically proven predictor of financial markets. Always treat these time windows as experimental context and manage risk using stop-losses at the stated technical invalidation levels.")
