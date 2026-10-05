@@ -1,0 +1,15 @@
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+TECHNICAL_WEIGHT = float(os.getenv("DEFAULT_TECHNICAL_WEIGHT", 0.70))
+ASTROLOGY_WEIGHT = float(os.getenv("DEFAULT_ASTROLOGY_WEIGHT", 0.30))
+DEFAULT_AYANAMSA = "Lahiri"
+MARKET_OPEN_TIME = "09:15"
+MARKET_CLOSE_TIME = "15:30"
+IST_TIMEZONE = "Asia/Kolkata"
+
+NSE_LATITUDE = 19.0760
+NSE_LONGITUDE = 72.8777
+NSE_ELEVATION_METERS = 14
